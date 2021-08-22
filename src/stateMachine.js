@@ -1,4 +1,6 @@
-const { addUser, getAllUsers, getUser, getUserByName, setUsers, updateUser, getMapBounds, getGameState, isIdInDb, setNextResupply, addToHistory, addHistoryMessage } = require('./database')
+const { addUser, getAllUsers, getUser, getUserByName, setUsers, updateUser, getMapBounds, getGameState, isIdInDb, setNextResupply, addToHistory, addHistoryMessage, isCeasefireActive } = require('./database')
+
+const { updateRole } = require('./highCommand.js')
 
 const awardDailySupplyAndVotes = async () => {
   const newResupplyTime = new Date()
@@ -11,22 +13,11 @@ const awardDailySupplyAndVotes = async () => {
     let newUsers = { ...users };
     Object.keys(newUsers).forEach((userID) => {
       user = newUsers[userID];
-      newUsers[userID] = { ...user, supply: !user.alive ? user.supply : user.supply + 1, votes: user.alive ? 0 : Math.min(user.votes, 2) }
+      newUsers[userID] = { ...user, supply: !user.alive ? user.supply : user.supply + 1, votes: user.alive ? 0 : Math.min(user.votes + 1, 2) }
     })
 
     await setUsers(newUsers)
-  }
-}
-
-// Remove remaining votes
-// reset voting status
-const cleanUpDay = async () => {
-  const users = await getAllUsers();
-  if (users) {
-    let newUsers = { ...users };
-    Object.keys(newUsers).forEach((userID) =>
-      newUsers[userID] = { ...newUsers[userID], votes: 0, votesForToday: 0 })
-    await setUsers(newUsers)
+    await addHistoryMessage("Resupply Delivered")
   }
 }
 
@@ -37,6 +28,10 @@ const isValidAction = async (action, actor, targetSpace, upgrades = 0) => {
   const actorData = await getUser(actor);
   const actorPosition = actorData.position;
   const playerAtTarget = await getPlayerAtPosition(targetSpace);
+  const ceasefireActive = await isCeasefireActive();
+  if (ceasefireActive || (playerAtTarget && actorData.id === playerAtTarget.id)) {
+    return false;
+  }
   switch (action) {
     case ('move'):
       return !isOutOfRange(actorPosition, targetSpace, range)
@@ -52,7 +47,7 @@ const isValidAction = async (action, actor, targetSpace, upgrades = 0) => {
         && playerAtTarget
         && await playerCanTakeAction(actor, 1 + upgrades);
     case ('vote'):
-      return await playerCanVote(actor);
+      return playerAtTarget && await playerCanVote(actor);
     default:
       throw Error('Invalid action validation')
   }
@@ -109,16 +104,13 @@ const executeFireRound = async (actorID, targetSpace, upgrades) => {
 const executeFireSupply = async (actorID, targetSpace, upgrades) => {
   const playerAtSpace = await getPlayerAtPosition(targetSpace);
 
-  await getUser(actorID).then((userData) => {
-    userData.supply -= 1 + upgrades;
-    updateUser(actorID, userData)
-  });
+  const userData = await getUser(actorID)
+  userData.supply -= 1 + upgrades;
+  await updateUser(actorID, userData)
 
-  await getUser(playerAtSpace.id).then((userData) => {
-
-    userData.supply += 1;
-    updateUser(playerAtSpace.id, userData)
-  });
+  const target = await getUser(playerAtSpace.id)
+  target.supply += 1;
+  await updateUser(playerAtSpace.id, target)
 }
 
 const voteForPlayer = async (actorID, targetPlayerName) => {
@@ -141,6 +133,11 @@ const voteForPlayer = async (actorID, targetPlayerName) => {
 const getGamestate = async (id) => {
   const gamestate = await getGameState(id);
   return gamestate;
+}
+
+const getSpectatorGamestate = async () => {
+  const spectatorGamestate = await getGameState();
+  return spectatorGamestate;
 }
 
 ////////////// Game Setup
@@ -193,11 +190,11 @@ const getPlayerAtPosition = async (position) => {
 
 const handlePlayerElimination = async (eliminatedPlayerId, killerId) => {
   const user = await getUser(eliminatedPlayerId)
-    //TODO: Set votes to 1
-  await updateUser(eliminatedPlayerId, { ...user, supply: 0, votes: 3, alive: false, position: null, health: 0 })
+  await updateUser(eliminatedPlayerId, { ...user, supply: 0, votes: 1, alive: false, position: null, health: 0 })
   const actor = await getUser(killerId);
   await updateUser(killerId, {...actor, kills: actor.kills + 1})
   await addHistoryMessage(`${user.name} has been eliminated by ${actor.name}`)
+  updateRole(eliminatedPlayerId, 'jury');
 
 }
 
@@ -249,8 +246,8 @@ module.exports = {
   executeAction,
   isValidAction,
   awardDailySupplyAndVotes,
-  cleanUpDay,
   getGamestate,
   isValidID,
-  isNameTaken
+  isNameTaken,
+  getSpectatorGamestate
 }
