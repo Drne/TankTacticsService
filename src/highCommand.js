@@ -6,15 +6,15 @@ const roleEndpoint = '/api/updateRole'
 const clearChatsEndpoint = '/api/clearChats'
 
 async function sendToHighCommand(message) {
-  await axios.post(`${highCommandUrl}${eventEndpoint}`,{message})
+  await axios.post(`${highCommandUrl}${eventEndpoint}`,{message, key: process.env.ADMIN_KEY})
 }
 
 async function updateRole(playerId, role) {
-  await axios.put(`${highCommandUrl}${roleEndpoint}`, {id: playerId, role})
+  await axios.put(`${highCommandUrl}${roleEndpoint}`, {id: playerId, role, key: process.env.ADMIN_KEY})
 }
 
 async function clearChats() {
-  await axios.post(`${highCommandUrl}${clearChatsEndpoint}`)
+  await axios.post(`${highCommandUrl}${clearChatsEndpoint}`, {key: process.env.ADMIN_KEY})
 }
 
 module.exports = { sendToHighCommand, updateRole, clearChats }

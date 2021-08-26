@@ -155,13 +155,14 @@ const addToHistory = async (action, actorName, upgrades, targetSpace, targetName
   let historyMessage = '';
   switch (action) {
     case ('fireRound'):
-      historyMessage = `${actorName} fired a round at ${targetName} at position (${targetSpace})`
+      historyMessage = `${actorName} fired a round at ${targetName} at position (${targetSpace.reverse()})`
       break;
     case ('fireSupply'):
-      historyMessage = `${actorName} gave supply to ${targetName} at position (${targetSpace})`
+      historyMessage = `${actorName} gave supply to ${targetName} at position (${targetSpace.reverse()})`
       break;
     case ('move'):
-      historyMessage = `${actorName} moved to position (${targetSpace})`
+      const actor = await getUserByName(actorName);
+      historyMessage = `${actorName} moved from (${actor.position.reverse()}) to (${targetSpace.reverse()})`
       break;
     case ('vote'):
       historyMessage = `${actorName} has voted for ${targetName}`

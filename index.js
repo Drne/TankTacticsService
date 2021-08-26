@@ -55,7 +55,6 @@ io.on('connection', (socket) => {
         console.log('registering player', msg)
         socket.playerId = msg
       } else {
-        console.log('unlog plaease')
         socket.emit('unlog')
       }
     }
@@ -126,5 +125,5 @@ app.use(express.static('public'));
 addRoutes(app, updateAllClientsGamestate, unlogId)
 
 app.listen(3001, () => console.log('server started'));
-server.listen(3000, () => console.log('tada'))
+server.listen(3000, () => console.log('socket waiting'))
 
