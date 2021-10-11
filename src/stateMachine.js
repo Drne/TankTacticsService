@@ -94,7 +94,6 @@ const executeFireRound = async (actorID, targetSpace, upgrades) => {
   const userData = await getUser(playerAtSpace.id)
   userData.health -= 1;
   if (userData.health <= 0) {
-    console.log('deado')
     await handlePlayerElimination(playerAtSpace.id, actorID)
   } else {
     await updateUser(playerAtSpace.id, userData)

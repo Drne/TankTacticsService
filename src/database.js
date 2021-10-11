@@ -152,17 +152,18 @@ const getMapBounds = async () => {
 }
 
 const addToHistory = async (action, actorName, upgrades, targetSpace, targetName = '') => {
+  const targetSpaceCopy = targetSpace.slice();
   let historyMessage = '';
   switch (action) {
     case ('fireRound'):
-      historyMessage = `${actorName} fired a round at ${targetName} at position (${targetSpace.reverse()})`
+      historyMessage = `${actorName} fired a round at ${targetName} at position (${targetSpaceCopy.reverse()})`
       break;
     case ('fireSupply'):
-      historyMessage = `${actorName} gave supply to ${targetName} at position (${targetSpace.reverse()})`
+      historyMessage = `${actorName} gave supply to ${targetName} at position (${targetSpaceCopy.reverse()})`
       break;
     case ('move'):
       const actor = await getUserByName(actorName);
-      historyMessage = `${actorName} moved from (${actor.position.reverse()}) to (${targetSpace.reverse()})`
+      historyMessage = `${actorName} moved from (${actor.position.slice().reverse()}) to (${targetSpaceCopy.reverse()})`
       break;
     case ('vote'):
       historyMessage = `${actorName} has voted for ${targetName}`

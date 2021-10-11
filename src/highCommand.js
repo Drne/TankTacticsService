@@ -6,7 +6,11 @@ const roleEndpoint = '/api/updateRole'
 const clearChatsEndpoint = '/api/clearChats'
 
 async function sendToHighCommand(message) {
-  await axios.post(`${highCommandUrl}${eventEndpoint}`,{message, key: process.env.ADMIN_KEY})
+  try {
+    await axios.post(`${highCommandUrl}${eventEndpoint}`,{message, key: process.env.ADMIN_KEY})
+  } catch {
+    console.log('unable to send to high command')
+  }
 }
 
 async function updateRole(playerId, role) {
